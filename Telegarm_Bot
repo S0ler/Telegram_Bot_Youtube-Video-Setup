@@ -1,0 +1,58 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Telegram.Bot;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.ReplyMarkups;
+using YoutubeExplode;
+using YoutubeExplode.Videos.Streams;
+
+namespace Telegarm_Bot_1
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            var client = new TelegramBotClient("Ваш токен");
+            client.StartReceiving(Update, Error);
+            Console.ReadKey();
+        }
+
+        async static Task Update(ITelegramBotClient botclient, Update update, CancellationToken arg3)
+        {
+            var messsange = update.Message;
+            var youtube = new YoutubeClient();
+            if (messsange.Text != null)
+            {
+                if (messsange.Text.Contains("https://youtu.be/"))
+                {
+                    var streamManifest = await youtube.Videos.Streams.GetManifestAsync(messsange.Text);
+                    var streamInfo = streamManifest.GetMuxedStreams().GetWithHighestVideoQuality();
+
+                    var keyboard = new InlineKeyboardMarkup(InlineKeyboardButton.WithUrl("Нажми на меня", streamInfo.Url));
+                    await botclient.SendTextMessageAsync(messsange.Chat, "Ссылка на скачивание", replyMarkup: keyboard);
+                }
+                if (messsange.Text.Contains("https://www.youtube.com/watch?v="))
+                {
+
+                    string url = messsange.Text.Replace("https://www.youtube.com/watch?v=", "https://youtu.be/");
+
+                    var streamManifest = await youtube.Videos.Streams.GetManifestAsync(url);
+                    var streamInfo = streamManifest.GetMuxedStreams().GetWithHighestVideoQuality();
+
+                    var keyboard = new InlineKeyboardMarkup(InlineKeyboardButton.WithUrl("Нажми на меня", streamInfo.Url));
+                    await botclient.SendTextMessageAsync(messsange.Chat, "Ссылка на скачивание", replyMarkup: keyboard);
+                }
+                else
+                {
+                    await botclient.SendTextMessageAsync(messsange.Chat.Id, "Что-то не так с ссылкой");
+                }
+            }
+        }
+        private static Task Error(ITelegramBotClient botclient, Exception arg2, CancellationToken arg3)
+        {
+            Console.WriteLine("Error");
+            return Task.CompletedTask;
+        }
+    }
+}
